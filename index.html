@@ -230,7 +230,9 @@
         const swapStatus = document.getElementById('swap-status');
 
         let userAddress = null;
-        let credits = 0; 
+
+        // RECUPERATION DES CREDITS SAUVEGARDÉS (ou 0 par défaut)
+        let credits = parseInt(localStorage.getItem('arc_credits')) || 0; 
 
         // ABIs combinées
         const nftABI = [
@@ -351,7 +353,6 @@
             if(e.code === 'Space') keys.Space = false;
         });
 
-        // === GESTION DES BOUTONS TACTILES (MOBILE) ===
         const btnLeft = document.getElementById('btn-left');
         const btnRight = document.getElementById('btn-right');
         const btnShoot = document.getElementById('btn-shoot');
@@ -460,6 +461,9 @@
 
         // === WEB3 FUNCTIONS ===
         function updateUI() {
+            // SAUVEGARDE LOCALE A CHAQUE MISE A JOUR
+            localStorage.setItem('arc_credits', credits);
+            
             creditDisplay.innerText = credits;
             if (userAddress) actionButtons.classList.remove('hidden'); actionButtons.classList.add('flex');
             if (!gameActive) {
@@ -682,6 +686,33 @@
                 }
             } finally {
                 executeSwapBtn.disabled = false;
+            }
+        });
+
+        // ==============================================
+        // AUTO-RECONNEXION AU CHARGEMENT DE LA PAGE
+        // ==============================================
+        window.addEventListener('load', async () => {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    // Demande silencieuse pour voir si un compte est déjà autorisé
+                    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                    if (accounts.length > 0) {
+                        userAddress = accounts[0];
+                        connectBtn.innerText = "🟢 " + userAddress.substring(0, 6) + "...";
+                        connectBtn.classList.replace('bg-slate-800', 'bg-emerald-900/50');
+                        balanceContainer.classList.remove('hidden');
+                        
+                        updateUI(); 
+                        
+                        // Si le joueur est sur l'onglet Dashboard, on charge ses NFTs
+                        if (!views.dashboard.classList.contains('hidden')) {
+                            loadDashboard();
+                        }
+                    }
+                } catch (e) {
+                    console.log("Aucune connexion précédente trouvée.");
+                }
             }
         });
     </script>
